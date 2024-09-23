@@ -3,17 +3,9 @@ from config import TELEGRAM_BOT_TOKEN, E621_API_KEY, E621_API_USERNAME
 from random import shuffle
 import requests
 
-predict = ['Вижу на канал ты подпишешься!',
-           'Сегодня тебя ждёт успех!',
-           'Сегодня ты научишься пользоваться хуками!'] 
-
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher(bot)
 
-@dp.message_handler(commands="start")
-async def start(message: types.Message):
-    shuffle(predict)
-    await message.answer(f"{message.from_user.full_name}, {predict[0]} Приходи ещё!")
 
 @dp.message_handler(commands="hi")
 async def start(message: types.Message):
@@ -27,7 +19,7 @@ async def reverse_search(image_file_id):
     url = "https://e621.net/iqdb_queries.json"
     auth = requests.auth.HTTPBasicAuth(E621_API_USERNAME,E621_API_KEY)
     headers = {
-        "User-Agent": "TGBot"
+        "User-Agent": "TFA Posting Bot"
     }
     # Send the request
     response = requests.post(url, auth=auth, headers=headers, files={"file": image_file})
