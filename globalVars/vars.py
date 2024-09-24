@@ -1,6 +1,6 @@
 import csv
 
-def tagCategories():
+def tag_categories():
 
     # Initialize an empty dictionary to store tags by category
     species = []
@@ -21,5 +21,5 @@ def tagCategories():
                 species.append(tag)
     return {"species": species}
 
-tagByCategory = tagCategories()
-TAG_SPECIES = tagByCategory['species']
+tag_by_category = tag_categories()
+TAG_SPECIES = tag_by_category['species']
