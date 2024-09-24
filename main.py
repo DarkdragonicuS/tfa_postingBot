@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from aiogram import types, Dispatcher, Bot
 from bot import dp, bot
-from config import TELEGRAM_BOT_TOKEN, ENDPOINT_URL
+from config import TELEGRAM_BOT_TOKEN, ENDPOINT_URL, WEBAPP_HOST, WEBAPP_PORT
 import uvicorn
 
 app = FastAPI()
@@ -32,4 +32,4 @@ async def bot_webhook(update: dict):
 async def on_shutdown():
     await bot.session.close()
 
-uvicorn.run(app=app,host='0.0.0.0',port=8080)
+uvicorn.run(app=app,host=WEBAPP_HOST,port=WEBAPP_PORT)
