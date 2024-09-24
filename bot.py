@@ -7,7 +7,6 @@ from globalVars.vars import TAG_SPECIES
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher(bot)
 
-
 @dp.message_handler(commands="hi")
 async def start(message: types.Message):
     await message.answer(f"{message.from_user.mention}, и тебе привет!")
@@ -83,7 +82,7 @@ async def handle_reverse_search(message: types.Message):
             if tag in TAG_SPECIES:                
                 post_tags.append(tag)  
         await message.reply('https://e621.net/posts/' + str(results['id']) + '\n' +
-            ' '.join('#' + tagToPrint for tagToPrint in post_tags))
+            ' '.join('#' + tag_to_print for tag_to_print in post_tags))
     else:
         # Send an error message
         await message.reply("Please send an image file to perform a reverse search.")
