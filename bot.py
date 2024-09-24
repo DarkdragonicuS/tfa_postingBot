@@ -30,7 +30,10 @@ async def reverse_search(image_file_id):
         # Parse the JSON response
         data = response.json()
         # Return the results
-        return data[0]["post"]["posts"]
+        try:
+            return data[0]["post"]["posts"]
+        except (KeyError, IndexError):
+            return ["Error: Unable to parse response"]
     else:
         # Return an error message
         return ["Error: {}".format(response.status_code)]
@@ -66,6 +69,11 @@ async def handle_reverse_search(message: types.Message):
         image_file_id = message.photo[-1].file_id
         # Perform the reverse search
         results = await reverse_search(image_file_id)
+        if isinstance(results, dict):
+            pass
+        else:
+            await message.reply("Error: Unable to parse response")
+            return
         # Send the results to the user
         #await message.reply(json.dumps(results))
         tags = results['tag_string'].split()
