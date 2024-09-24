@@ -2,6 +2,7 @@ from aiogram import Dispatcher, Bot, types
 from config import TELEGRAM_BOT_TOKEN, E621_API_KEY, E621_API_USERNAME
 from random import shuffle
 import requests
+from globalVars.vars import TAG_SPECIES
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher(bot)
@@ -34,9 +35,31 @@ async def reverse_search(image_file_id):
         # Return an error message
         return ["Error: {}".format(response.status_code)]
 
+# async def tag_categories():
+
+#     # Initialize an empty dictionary to store tags by category
+#     species = []
+
+#     # Read the CSV file
+#     with open('tags.csv', 'r', encoding='utf-8') as csvfile:
+#         reader = csv.DictReader(csvfile)
+#         #rowNum = 0
+#         for row in reader:
+#         #    rowNum += 1
+#         #    print(rowNum)
+
+#             category = row['category']
+#             tag = row['name']
+            
+#             # Add the tag to the corresponding category list
+#             if category == '5':
+#                 species.append(tag)
+#     return species
+
 # Define a handler for the /reverse_search command
 @dp.message_handler(content_types=["photo"])
 async def handle_reverse_search(message: types.Message):
+    print('Recieved image to search')
     # Check if the user sent an image file
     if message.photo:
         # Get the image file ID
@@ -45,8 +68,14 @@ async def handle_reverse_search(message: types.Message):
         results = await reverse_search(image_file_id)
         # Send the results to the user
         #await message.reply(json.dumps(results))
+        tags = results['tag_string'].split()
+        post_tags = []
+        #speciesTags = tag_categories()
+        for tag in tags:
+            if tag in TAG_SPECIES:                
+                post_tags.append(tag)  
         await message.reply('https://e621.net/posts/' + str(results['id']) + '\n' +
-            ' '.join('#' + word for word in results['tag_string'].split()))
+            ' '.join('#' + tagToPrint for tagToPrint in post_tags))
     else:
         # Send an error message
         await message.reply("Please send an image file to perform a reverse search.")
