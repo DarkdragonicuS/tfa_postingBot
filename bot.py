@@ -17,7 +17,7 @@ from aiogram import Dispatcher, Bot, types
 from config import TELEGRAM_BOT_TOKEN, E621_API_KEY, E621_API_USERNAME
 from random import shuffle
 import requests
-from globalVars.vars import TAG_SPECIES
+from global_vars.vars import TAG_SPECIES
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher(bot)

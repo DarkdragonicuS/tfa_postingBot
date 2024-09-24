@@ -21,7 +21,7 @@ def tag_categories():
     species = []
 
     # Read the CSV file
-    with open('globalvars/tags.csv', 'r', encoding='utf-8') as csvfile:
+    with open('global_vars/tags.csv', 'r', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         #rowNum = 0
         for row in reader:
