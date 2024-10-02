@@ -97,7 +97,7 @@ async def handle_source_command(message: types.Message):
     else:
         await message.reply("Please reply to a photo message with this command.") 
 
-async def send_image_source(message, reply_message=None, edit_message=False):
+async def send_image_source(message, reply_message=None, edit_message=False, tags_as_buttons=False):
     
     if reply_message is None:
         reply_message = message
@@ -115,16 +115,32 @@ async def send_image_source(message, reply_message=None, edit_message=False):
             post_tags.append(tag)
     post_url = 'https://e621.net/posts/' + str(results['posts']['id'])
     md5 = results['md5']
-    post_tags_str = ' '.join('#' + tag_to_print for tag_to_print in post_tags)
-    message_reply = f'{post_tags_str}\nMD5: {md5}'
-        
+    message_reply = f'MD5: {md5}\nTags: {" ".join(post_tags)}\n{post_url}'
     keyboard = types.InlineKeyboardMarkup()
+    if tags_as_buttons:
+        row = []
+        for tag in post_tags:
+            button = types.InlineKeyboardButton(text=tag, callback_data=tag)
+            row.append(button)
+            if len(row) == 3:
+                keyboard.row(*row)
+                row = []
+        if row:
+            keyboard.row(*row)
+    else:
+        message_reply = f'MD5: {md5}\nTags: {" ".join([f"#{tag}" for tag in post_tags])}\n{post_url}'
+
     button = types.InlineKeyboardButton(text='e621', url=post_url)
     keyboard.add(button)
     
     if edit_message:
-        await reply_message.edit_caption(message_reply, reply_markup=keyboard)
+        if tags_as_buttons:
+            await reply_message.edit_caption(f'MD5: {md5}', reply_markup=keyboard)
+        else:
+            await reply_message.edit_caption(f'MD5: {md5}\n{" ".join([f"#{tag}" for tag in post_tags])}', reply_markup=None)
     else:
-        await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=message_reply, reply_markup=keyboard)       
-    
+        if tags_as_buttons:
+            await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=f'MD5: {md5}', reply_markup=keyboard)
+        else:
+            await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=f'MD5: {md5}\n{" ".join([f"#{tag}" for tag in post_tags])}')
     return message_reply
