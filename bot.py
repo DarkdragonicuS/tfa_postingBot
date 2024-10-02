@@ -98,6 +98,7 @@ async def handle_source_command(message: types.Message):
         await message.reply("Please reply to a photo message with this command.") 
 
 async def send_image_source(message, reply_message=None, edit_message=False):
+    
     if reply_message is None:
         reply_message = message
     image_file_id = reply_message.photo[-1].file_id
@@ -115,11 +116,15 @@ async def send_image_source(message, reply_message=None, edit_message=False):
     post_url = 'https://e621.net/posts/' + str(results['posts']['id'])
     md5 = results['md5']
     post_tags_str = ' '.join('#' + tag_to_print for tag_to_print in post_tags)
-    message_reply = f'{post_url}\nMD5: {md5}\n{post_tags_str}'
+    message_reply = f'{post_tags_str}\nMD5: {md5}'
         
+    keyboard = types.InlineKeyboardMarkup()
+    button = types.InlineKeyboardButton(text='e621', url=post_url)
+    keyboard.add(button)
+    
     if edit_message:
-        await reply_message.edit_caption(message_reply)
+        await reply_message.edit_caption(message_reply, reply_markup=keyboard)
     else:
-        await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=message_reply)       
+        await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=message_reply, reply_markup=keyboard)       
     
     return message_reply
