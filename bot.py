@@ -92,5 +92,38 @@ async def handle_reverse_search(message: types.Message):
         # Send an error message
         await message.reply("Please send an image file to perform a reverse search.")
 
+@dp.channel_post_handler(content_types=["photo"])
+async def handle_reverse_search_channel(message: types.Message):
+    print('Recieved image to search')
+    # Check if the user sent an image file
+    if message.photo:
+        # Get the image file ID
+        image_file_id = message.photo[-1].file_id
+        # Perform the reverse search
+        results = await reverse_search(image_file_id)
+        if isinstance(results, dict):
+            pass
+        else:
+            await message.reply("Error: Unable to parse response")
+            return
+        # Send the results to the user
+        tags = results['posts']['tag_string'].split()
+        post_tags = []
+
+        for tag in tags:
+            if tag in TAG_SPECIES:
+                post_tags.append(tag)
+        post_url = 'https://e621.net/posts/' + str(results['posts']['id'])
+        md5 = results['md5']
+        post_tags_str = ' '.join('#' + tag_to_print for tag_to_print in post_tags)
+        message_reply = f'{post_url}\nMD5: {md5}\n{post_tags_str}'
+        # await message.delete()
+        # await bot.send_photo(message.chat.id, message.photo[-1].file_id, caption=message_reply)
+        await message.edit_caption(message_reply, parse_mode="Markdown")
+        await message.edit_caption(message_reply)
+    else:
+        # Send an error message
+        await message.reply("Please send an image file to perform a reverse search.")
+        
 #if __name__ == '__main__':
 #    executor.start_polling(dp, skip_updates=True)
