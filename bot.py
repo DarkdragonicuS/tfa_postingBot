@@ -80,8 +80,7 @@ async def handle_reverse_search_channel(message: types.Message):
     # Check if the user sent an image file
     if message.photo:
         # Get the image file ID
-        message_reply = await send_image_source(message=message, edit_message=True)
-        #await message.edit_caption(message_reply)
+        await send_image_source(message=message, edit_message=True)
     else:
         # Send an error message
         await message.reply("Please send an image file to perform a reverse search.")
