@@ -28,6 +28,10 @@ WEBHOOK_URL = f"{ENDPOINT_URL}{WEBHOOK_PATH}"
 
 @app.on_event("startup")
 async def on_startup():
+    await dp.bot.set_my_commands([
+        types.BotCommand("source", "get source of media"),
+        types.BotCommand("delsource", "get source of media and delete media"),
+    ])
     webhook_info = await bot.get_webhook_info()
     if webhook_info.url != WEBHOOK_URL:
         await bot.set_webhook(

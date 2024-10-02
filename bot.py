@@ -119,11 +119,37 @@ async def handle_reverse_search_channel(message: types.Message):
         message_reply = f'{post_url}\nMD5: {md5}\n{post_tags_str}'
         # await message.delete()
         # await bot.send_photo(message.chat.id, message.photo[-1].file_id, caption=message_reply)
-        await message.edit_caption(message_reply, parse_mode="Markdown")
+        # await message.edit_caption(message_reply, parse_mode="Markdown")
         await message.edit_caption(message_reply)
     else:
         # Send an error message
         await message.reply("Please send an image file to perform a reverse search.")
+
+@dp.message_handler(commands=['source','delsource'], content_types=["text"])
+async def handle_source_command(message: types.Message):
+    reply_message = message.reply_to_message
+    if reply_message and reply_message.photo:
+        image_file_id = reply_message.photo[-1].file_id
+        results = await reverse_search(image_file_id)
+        if isinstance(results, dict):
+            pass
+        else:
+            await message.reply("Error: Unable to parse response")
+            return
+        tags = results['posts']['tag_string'].split()
+        post_tags = []
+        for tag in tags:
+            if tag in TAG_SPECIES:
+                post_tags.append(tag)
+        post_url = 'https://e621.net/posts/' + str(results['posts']['id'])
+        md5 = results['md5']
+        post_tags_str = ' '.join('#' + tag_to_print for tag_to_print in post_tags)
+        message_reply = f'{post_url}\nMD5: {md5}\n{post_tags_str}'
         
-#if __name__ == '__main__':
-#    executor.start_polling(dp, skip_updates=True)
+        await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=message_reply)
+        await message.delete()        
+        
+        if message.text.startswith('/delsource'):
+            await reply_message.delete()
+    else:
+        await message.reply("Please reply to a photo message with this command.")        
