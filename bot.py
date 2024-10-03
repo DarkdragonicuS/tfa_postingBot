@@ -80,7 +80,8 @@ async def handle_reverse_search_channel(message: types.Message):
     # Check if the user sent an image file
     if message.photo:
         # Get the image file ID
-        await send_image_source(message=message, edit_message=True)
+        #await send_image_source(message=message, edit_message=True)
+        await send_image_source(message=message, edit_message=False)
     else:
         # Send an error message
         await message.reply("Please send an image file to perform a reverse search.")
@@ -91,10 +92,16 @@ async def handle_source_command(message: types.Message):
     reply_message = message.reply_to_message
     if reply_message and reply_message.photo:
         await send_image_source(message, reply_message)
-        await message.delete()        
+        try:
+            await message.delete()
+        except Exception as e:
+            pass
         
         if message.text.startswith('/delsource'):
-            await reply_message.delete()
+            try:
+                await reply_message.delete()
+            except Exception as e:
+                pass
     else:
         await message.reply("Please reply to a photo message with this command.") 
 
@@ -146,9 +153,10 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
         else:
             await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
     else:
-        if tags_as_buttons:
-            await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+        if 'cub' in post_tags:
+            await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
         else:
             await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+
     return message_reply
 
