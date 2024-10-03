@@ -17,7 +17,7 @@ from aiogram import Dispatcher, Bot, types
 from config import TELEGRAM_BOT_TOKEN, E621_API_KEY, E621_API_USERNAME
 from random import shuffle
 import requests
-from global_vars.vars import TAG_SPECIES
+from global_vars.vars import TAG_SPECIES, TAG_CHARACTERS, TAG_GENERAL, TAG_GENERAL_MAPPING
 import hashlib
 from requests_toolbelt.multipart import MultipartEncoder
 from io import BytesIO
@@ -87,6 +87,7 @@ async def handle_reverse_search_channel(message: types.Message):
 
 @dp.message_handler(commands=['source','delsource'], content_types=["text"])
 async def handle_source_command(message: types.Message):
+    print('Recieved image to search')
     reply_message = message.reply_to_message
     if reply_message and reply_message.photo:
         await send_image_source(message, reply_message)
@@ -113,6 +114,11 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     for tag in tags:
         if tag in TAG_SPECIES:
             post_tags.append(tag)
+        # if tag in TAG_CHARACTERS:
+        #     post_tags.append(tag)
+        if tag in TAG_GENERAL:
+            if tag in TAG_GENERAL_MAPPING:
+                post_tags.append(TAG_GENERAL_MAPPING[tag])
     post_url = 'https://e621.net/posts/' + str(results['posts']['id'])
     md5 = results['md5']
     message_reply = f'MD5: {md5}\nTags: {" ".join(post_tags)}\n{post_url}'
@@ -133,14 +139,16 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     button = types.InlineKeyboardButton(text='e621', url=post_url)
     keyboard.add(button)
     
+    #if edit_message and (message.forward_from_chat and message.chat.id == message.forward_from_chat.id):
     if edit_message:
         if tags_as_buttons:
-            await reply_message.edit_caption(f'MD5: {md5}', reply_markup=keyboard)
+            await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
         else:
-            await reply_message.edit_caption(f'MD5: {md5}\n{" ".join([f"#{tag}" for tag in post_tags])}', reply_markup=None)
+            await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
     else:
         if tags_as_buttons:
-            await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=f'MD5: {md5}', reply_markup=keyboard)
+            await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
         else:
-            await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=f'MD5: {md5}\n{" ".join([f"#{tag}" for tag in post_tags])}')
+            await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
     return message_reply
+

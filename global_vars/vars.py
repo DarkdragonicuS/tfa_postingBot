@@ -19,6 +19,23 @@ def tag_categories():
 
     # Initialize an empty dictionary to store tags by category
     species = []
+    characters = []
+    general = []
+    general_mapping = {
+        'young': 'cub',
+        'male/male': 'gay',
+        'male/female': 'straight',
+        'female/female': 'lesbian',
+        'solo': 'solo',
+        'duo': 'duo',
+        'group': 'group',
+        'anthro': 'anthro',
+        'feral': 'feral',
+        'male': 'male',
+        'female': 'female',
+        'intersex': 'intersex',
+        'herm': 'herm',
+    }
 
     # Read the CSV file
     with open('global_vars/tags.csv', 'r', encoding='utf-8') as csvfile:
@@ -34,7 +51,14 @@ def tag_categories():
             # Add the tag to the corresponding category list
             if category == '5':
                 species.append(tag)
-    return {"species": species}
+            if category == '4':
+                characters.append(tag)
+            if category == '0':
+                general.append(tag)
+    return {"species": species, "characters": characters, "general": general, 'general_mapping': general_mapping}
 
 tag_by_category = tag_categories()
 TAG_SPECIES = tag_by_category['species']
+TAG_CHARACTERS = tag_by_category['characters']
+TAG_GENERAL = tag_by_category['general']
+TAG_GENERAL_MAPPING = tag_by_category['general_mapping']
