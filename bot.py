@@ -17,7 +17,7 @@ from aiogram import Dispatcher, Bot, types
 from config import TELEGRAM_BOT_TOKEN, E621_API_KEY, E621_API_USERNAME
 from random import shuffle
 import requests
-from global_vars.vars import TAG_SPECIES, TAG_CHARACTERS, TAG_GENERAL, TAG_GENERAL_MAPPING
+from global_vars.vars import TAG_SPECIES, TAG_GENERAL, TAG_CHARACTERS, TAG_GENERAL_MAPPING, TAGS_ORDER
 import hashlib
 from requests_toolbelt.multipart import MultipartEncoder
 from io import BytesIO
@@ -68,23 +68,28 @@ async def handle_reverse_search(message: types.Message):
     # Check if the user sent an image file
     if message.photo:
         # Send the results to the user
-        await send_image_source(message)
-        await message.delete()
+        result = await send_image_source(message)
+        if result is not None:
+            await message.delete()
     else:
         # Send an error message
         await message.reply("Please send an image file to perform a reverse search.")
 
 @dp.channel_post_handler(content_types=["photo"])
 async def handle_reverse_search_channel(message: types.Message):
-    print('Recieved image to search')
-    # Check if the user sent an image file
-    if message.photo:
-        # Get the image file ID
-        #await send_image_source(message=message, edit_message=True)
-        await send_image_source(message=message, edit_message=False)
+    print('URL: ' + message.url)
+    if message.caption is None:
+        print('Recieved image to search')
+        # Check if the user sent an image file
+        if message.photo:
+            # Get the image file ID
+            #await send_image_source(message=message, edit_message=True)
+            await send_image_source(message=message, edit_message=False)
+        else:
+            # Send an error message
+            await message.reply("Please send an image file to perform a reverse search.")
     else:
-        # Send an error message
-        await message.reply("Please send an image file to perform a reverse search.")
+        print('Ignored image to search because it has a caption')
 
 @dp.message_handler(commands=['source','delsource'], content_types=["text"])
 async def handle_source_command(message: types.Message):
@@ -105,6 +110,17 @@ async def handle_source_command(message: types.Message):
     else:
         await message.reply("Please reply to a photo message with this command.") 
 
+async def sort_tags(tags):
+    sorted_tags = []
+    for tag_group in TAGS_ORDER:
+        for tag in tags:
+            if tag in tag_group and tag not in sorted_tags:
+                sorted_tags.append(tag)
+    return sorted_tags
+
+async def convert_tags(tags):
+    return [tag.replace('(', '').replace(')', '').replace('-', '_') for tag in tags]
+
 async def send_image_source(message, reply_message=None, edit_message=False, tags_as_buttons=False):
     
     if reply_message is None:
@@ -121,11 +137,13 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     for tag in tags:
         if tag in TAG_SPECIES:
             post_tags.append(tag)
-        # if tag in TAG_CHARACTERS:
-        #     post_tags.append(tag)
+        if tag in TAG_CHARACTERS:
+            post_tags.append(tag)
         if tag in TAG_GENERAL:
             if tag in TAG_GENERAL_MAPPING:
                 post_tags.append(TAG_GENERAL_MAPPING[tag])
+    post_tags = await sort_tags(post_tags)
+    post_tags = await convert_tags(post_tags)
     post_url = 'https://e621.net/posts/' + str(results['posts']['id'])
     md5 = results['md5']
     message_reply = f'MD5: {md5}\nTags: {" ".join(post_tags)}\n{post_url}'
@@ -157,6 +175,6 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
             await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
         else:
             await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+        await message.delete()
 
     return message_reply
-

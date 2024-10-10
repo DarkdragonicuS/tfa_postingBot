@@ -36,7 +36,13 @@ def tag_categories():
         'intersex': 'intersex',
         'herm': 'herm',
     }
-
+    tags_order = [
+                  ('cub'),
+                  ('gay','straight','lesbian'),
+                  ('solo','duo','group'),
+                  ('male','female','intersex','herm'),
+                  ('anthro','feral'),
+                ]
     # Read the CSV file
     with open('global_vars/tags.csv', 'r', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -62,3 +68,4 @@ TAG_SPECIES = tag_by_category['species']
 TAG_CHARACTERS = tag_by_category['characters']
 TAG_GENERAL = tag_by_category['general']
 TAG_GENERAL_MAPPING = tag_by_category['general_mapping']
+TAGS_ORDER = ['cub','gay','straight','lesbian','solo','duo','group','male','female','intersex','herm','anthro','feral'] + TAG_SPECIES + TAG_CHARACTERS
