@@ -178,3 +178,24 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
         await message.delete()
 
     return message_reply
+
+
+@dp.channel_post_handler()
+async def handle_reverse_search_channel_commands(message: types.Message, content_types=["text"]):
+    if message.text == '/source' or message.text == '/delsource':
+        print('Recieved image to search')
+        reply_message = message.reply_to_message
+        if reply_message and reply_message.photo:
+            result = await send_image_source(message, reply_message)
+            # try:
+            #     await message.delete()                
+            # except Exception as e:
+            #     pass
+            
+            if message.text.startswith('/delsource') and result is not None:
+                try:
+                    await reply_message.delete()
+                except Exception as e:
+                    pass
+        else:
+            await message.reply("Please reply to a photo message with this command.") 
