@@ -70,7 +70,10 @@ async def handle_reverse_search(message: types.Message):
         # Send the results to the user
         result = await send_image_source(message)
         if result is not None:
-            await message.delete()
+            try:
+                await message.delete()
+            except Exception as e:
+                pass
     else:
         # Send an error message
         await message.reply("Please send an image file to perform a reverse search.")
@@ -78,7 +81,7 @@ async def handle_reverse_search(message: types.Message):
 @dp.channel_post_handler(content_types=["photo"])
 async def handle_reverse_search_channel(message: types.Message):
     print('URL: ' + message.url)
-    if message.caption is None:
+    if message.caption is None and message.media_group_id is None:
         print('Recieved image to search')
         # Check if the user sent an image file
         if message.photo:
@@ -121,6 +124,10 @@ async def sort_tags(tags):
 async def convert_tags(tags):
     return [tag.replace('(', '').replace(')', '').replace('-', '_') for tag in tags]
 
+def remap_tags(tags):
+    #TODO
+    return tags
+
 async def send_image_source(message, reply_message=None, edit_message=False, tags_as_buttons=False):
     
     if reply_message is None:
@@ -133,6 +140,7 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
         await message.reply("Error: Unable to parse response")
         return
     tags = results['posts']['tag_string'].split()
+    tags = remap_tags(tags)
     post_tags = []
     for tag in tags:
         if tag in TAG_SPECIES:
@@ -175,7 +183,10 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
             await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
         else:
             await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
-        await message.delete()
+        try:
+            await message.delete()
+        except Exception as e:
+            pass
 
     return message_reply
 
@@ -186,7 +197,10 @@ async def handle_reverse_search_channel_commands(message: types.Message, content
         print('Recieved image to search')
         reply_message = message.reply_to_message
         if reply_message and reply_message.photo:
-            result = await send_image_source(message, reply_message)
+            if reply_message.media_group_id is None:
+                result = await send_image_source(message, reply_message)
+            else:
+                result = await send_image_source(message, reply_message,True)
             # try:
             #     await message.delete()                
             # except Exception as e:
@@ -199,3 +213,4 @@ async def handle_reverse_search_channel_commands(message: types.Message, content
                     pass
         else:
             await message.reply("Please reply to a photo message with this command.") 
+            
