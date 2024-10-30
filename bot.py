@@ -137,7 +137,10 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     if isinstance(results, dict):
         pass
     else:
-        await message.reply("Error: Unable to parse response")
+        try:
+            await reply_message.reply("Image source not found")
+        except Exception as e:
+            pass
         return
     tags = results['posts']['tag_string'].split()
     tags = remap_tags(tags)
@@ -211,6 +214,7 @@ async def handle_reverse_search_channel_commands(message: types.Message, content
                     await reply_message.delete()
                 except Exception as e:
                     pass
+            await message.delete()
         else:
             await message.reply("Please reply to a photo message with this command.") 
             
