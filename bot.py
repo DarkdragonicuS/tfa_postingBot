@@ -214,7 +214,10 @@ async def handle_reverse_search_channel_commands(message: types.Message, content
                     await reply_message.delete()
                 except Exception as e:
                     pass
-            await message.delete()
+            try:
+                await message.delete()
+            except Exception as e:
+                pass
         else:
             await message.reply("Please reply to a photo message with this command.") 
             
