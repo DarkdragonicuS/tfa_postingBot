@@ -39,6 +39,7 @@ def tag_categories():
     }
     tags_order = [
                   ('cub'),
+                  ('human'),
                   ('gay','straight','lesbian'),
                   ('solo','duo','group'),
                   ('male','female','intersex','herm'),
@@ -70,4 +71,4 @@ TAG_CHARACTERS = tag_by_category['characters']
 TAG_GENERAL = tag_by_category['general']
 TAG_GENERAL_MAPPING = tag_by_category['general_mapping']
 TAG_META = ['comix']
-TAGS_ORDER = ['cub','gay','straight','lesbian','solo','duo','group','male','female','intersex','herm','anthro','feral'] + TAG_SPECIES + TAG_CHARACTERS + TAG_META
+TAGS_ORDER = ['cub','human','gay','straight','lesbian','solo','duo','group','male','female','intersex','herm','anthro','feral'] + TAG_SPECIES + TAG_CHARACTERS + TAG_META

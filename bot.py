@@ -182,7 +182,7 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
         else:
             await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
     else:
-        if 'cub' in post_tags:
+        if 'cub' in post_tags or 'human' in post_tags:
             await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
         else:
             await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
