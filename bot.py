@@ -178,9 +178,15 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     #if edit_message and (message.forward_from_chat and message.chat.id == message.forward_from_chat.id):
     if edit_message:
         if tags_as_buttons:
-            await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            try:
+                await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            except Exception as e:
+                pass
         else:
-            await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            try:
+                await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            except Exception as e:
+                pass
     else:
         if 'cub' in post_tags or 'human' in post_tags:
             await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
@@ -211,13 +217,16 @@ async def handle_reverse_search_channel_commands(message: types.Message, content
             
             if message.text.startswith('/delsource') and result is not None:
                 try:
+                    # Deleting original image
                     await reply_message.delete()
                 except Exception as e:
-                    pass
+                  pass
             try:
+                # Deleting command message
                 await message.delete()
             except Exception as e:
                 pass
         else:
             await message.reply("Please reply to a photo message with this command.") 
+
             
