@@ -17,7 +17,7 @@ from fastapi import FastAPI
 from aiogram import types, Dispatcher, Bot
 from bot import dp, bot
 from config import TELEGRAM_BOT_TOKEN, ENDPOINT_URL, WEBAPP_HOST, WEBAPP_PORT
-import uvicorn
+import uvicorn, os, sqlite3
 
 app = FastAPI()
 WEBHOOK_PATH = f"/bot/{TELEGRAM_BOT_TOKEN}"
@@ -25,6 +25,34 @@ WEBHOOK_URL = f"{ENDPOINT_URL}{WEBHOOK_PATH}"
 # bot = Bot(token=TELEGRAM_BOT_TOKEN)
 # dp = Dispatcher(bot)
 # dp.skip_updates()
+
+def create_database_if_not_exists(db_name):
+    if not os.path.exists(db_name):
+        with open(db_name, 'w') as f:
+            pass  # Create an empty file
+
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+
+    # Create table if it does not exist
+    c.execute('''CREATE TABLE IF NOT EXISTS posts
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  message_id INTEGER,
+                  channel_id INTEGER,
+                  post_url TEXT,
+                  md5 TEXT,
+                  tags TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS scheduled_posts
+                (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                channel_id INTEGER,
+                tags TEXT)''')
+
+    conn.commit()
+    conn.close()
+
+def init_app():
+    create_database_if_not_exists('db/channelPosts.db')
+    uvicorn.run(app=app,host=WEBAPP_HOST,port=WEBAPP_PORT)
 
 @app.on_event("startup")
 async def on_startup():
@@ -51,4 +79,4 @@ async def bot_webhook(update: dict):
 async def on_shutdown():
     await bot.session.close()
 
-uvicorn.run(app=app,host=WEBAPP_HOST,port=WEBAPP_PORT)
+init_app()
