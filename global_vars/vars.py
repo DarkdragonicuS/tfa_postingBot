@@ -69,6 +69,26 @@ def tag_categories():
                 general.append(tag)
     return {"species": species, "characters": characters, "general": general, 'general_mapping': general_mapping}
 
+def tag_synonyms():
+    #TODO add more
+    main_tags = ['pokemon','dog','cat','digimon','dragon']
+
+    tag_synonyms = {}
+    with open('global_vars/tag_synonyms.csv', 'r', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            consequent_name = row['consequent_name']
+            antecedent_name = row['antecedent_name']
+            if consequent_name in main_tags:
+                if antecedent_name in tag_synonyms:
+                    tag_synonyms[antecedent_name].append(consequent_name)
+                else:
+                    tag_synonyms[antecedent_name] = [consequent_name]
+        tag_synonyms = dict(sorted(tag_synonyms.items()))
+
+    return tag_synonyms
+
+tag_synonym_values = tag_synonyms()
 tag_by_category = tag_categories()
 TAG_SPECIES = tag_by_category['species']
 TAG_CHARACTERS = tag_by_category['characters']
