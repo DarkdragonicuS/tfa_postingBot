@@ -35,7 +35,11 @@ def tag_categories():
         'female': 'female',
         'intersex': 'intersex',
         'herm': 'herm',
-        'comic': 'comix'
+        'comic': 'comix',
+        'domestic_dog': 'dog',
+        'domestic_cat': 'cat',
+        'digimon_species': 'digimon',
+        'pokemon_(species)': 'pokemon'
     }
     tags_order = [
                   ('cub'),
