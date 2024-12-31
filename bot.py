@@ -125,7 +125,9 @@ async def convert_tags(tags):
     return [tag.replace('(', '').replace(')', '').replace('-', '_') for tag in tags]
 
 def remap_tags(tags):
-    #TODO
+    for i, tag in enumerate(tags):
+        if tag in TAG_GENERAL_MAPPING:
+            tags[i] = TAG_GENERAL_MAPPING[tag]            
     return tags
 
 async def send_image_source(message, reply_message=None, edit_message=False, tags_as_buttons=False):
@@ -143,7 +145,7 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
             pass
         return
     tags = results['posts']['tag_string'].split()
-    tags = remap_tags(tags)
+    #tags = remap_tags(tags)
     post_tags = []
     for tag in tags:
         if tag in TAG_SPECIES:
@@ -153,6 +155,7 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
         if tag in TAG_GENERAL:
             if tag in TAG_GENERAL_MAPPING:
                 post_tags.append(TAG_GENERAL_MAPPING[tag])
+    post_tags = remap_tags(post_tags)
     post_tags = await sort_tags(post_tags)
     post_tags = await convert_tags(post_tags)
     post_url = 'https://e621.net/posts/' + str(results['posts']['id'])
