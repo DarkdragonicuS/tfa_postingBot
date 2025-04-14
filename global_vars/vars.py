@@ -39,9 +39,12 @@ def tag_categories():
         'domestic_dog': 'dog',
         'domestic_cat': 'cat',
         'digimon_species': 'digimon',
-        'pokemon_(species)': 'pokemon'
+        'pokemon_(species)': 'pokemon',
+        'urine': 'urine',
+        'feces': 'feces'
     }
     tags_order = [
+                  ('urine','feces'),
                   ('cub'),
                   ('human'),
                   ('gay','straight','lesbian'),
@@ -73,26 +76,45 @@ def tag_synonyms():
     #TODO add more
     main_tags = ['pokemon','dog','cat','digimon','dragon']
 
-    tag_synonyms = {}
+    synonyms = {}
     with open('global_vars/tag_synonyms.csv', 'r', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             consequent_name = row['consequent_name']
             antecedent_name = row['antecedent_name']
             if consequent_name in main_tags:
-                if antecedent_name in tag_synonyms:
-                    tag_synonyms[antecedent_name].append(consequent_name)
+                if antecedent_name in synonyms:
+                    synonyms[antecedent_name].append(consequent_name)
                 else:
-                    tag_synonyms[antecedent_name] = [consequent_name]
-        tag_synonyms = dict(sorted(tag_synonyms.items()))
+                    synonyms[antecedent_name] = [consequent_name]
+    synonyms = dict(sorted(synonyms.items()))
+    return synonyms
 
-    return tag_synonyms
+def tag_implications():
+    #TODO add more
+    main_tags = ['pokemon','dog','cat','digimon','dragon']
 
-tag_synonym_values = tag_synonyms()
+    implications = {}
+    with open('global_vars/tag_implications.csv', 'r', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            consequent_name = row['consequent_name']
+            antecedent_name = row['antecedent_name']
+            if consequent_name in main_tags:
+                if antecedent_name in implications:
+                    implications[antecedent_name].append(consequent_name)
+                else:
+                    implications[antecedent_name] = [consequent_name]
+    implications = dict(sorted(implications.items()))
+    return implications
+
 tag_by_category = tag_categories()
 TAG_SPECIES = tag_by_category['species']
 TAG_CHARACTERS = tag_by_category['characters']
 TAG_GENERAL = tag_by_category['general']
 TAG_GENERAL_MAPPING = tag_by_category['general_mapping']
+TAG_SYNONYMS = tag_synonyms()
+TAG_IMPLICATIONS = tag_implications()
 TAG_META = ['comix']
-TAGS_ORDER = ['cub','human','gay','straight','lesbian','solo','duo','group','male','female','intersex','herm','anthro','feral'] + TAG_SPECIES + TAG_CHARACTERS + TAG_META
+TAG_SPOILERED = ['urine','feces','cub','human']
+TAGS_ORDER = TAG_SPOILERED + ['gay','straight','lesbian','solo','duo','group','male','female','intersex','herm','anthro','feral'] + TAG_SPECIES + TAG_CHARACTERS + TAG_META

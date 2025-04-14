@@ -17,10 +17,11 @@ from aiogram import Dispatcher, Bot, types
 from config import TELEGRAM_BOT_TOKEN, E621_API_KEY, E621_API_USERNAME
 from random import shuffle
 import requests
-from global_vars.vars import TAG_SPECIES, TAG_GENERAL, TAG_CHARACTERS, TAG_GENERAL_MAPPING, TAGS_ORDER
+from global_vars.vars import TAG_SPECIES, TAG_GENERAL, TAG_CHARACTERS, TAG_GENERAL_MAPPING, TAGS_ORDER, TAG_IMPLICATIONS, TAG_SYNONYMS, TAG_SPOILERED
 import hashlib
 from requests_toolbelt.multipart import MultipartEncoder
 from io import BytesIO
+from datetime import datetime
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher(bot)
@@ -125,9 +126,15 @@ async def convert_tags(tags):
     return [tag.replace('(', '').replace(')', '').replace('-', '_') for tag in tags]
 
 def remap_tags(tags):
+    # Rename tags according to TAG_GENERAL_MAPPING
     for i, tag in enumerate(tags):
         if tag in TAG_GENERAL_MAPPING:
-            tags[i] = TAG_GENERAL_MAPPING[tag]            
+            tags[i] = TAG_GENERAL_MAPPING[tag]
+
+    # Remove implied tags
+    for i, tag in enumerate(tags):
+        if tag in TAG_IMPLICATIONS and TAG_IMPLICATIONS[tag] in tags:
+            tags.remove(tag)
     return tags
 
 async def send_image_source(message, reply_message=None, edit_message=False, tags_as_buttons=False):
@@ -145,6 +152,12 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
             pass
         return
     tags = results['posts']['tag_string'].split()
+
+    img_file_url = results['posts'].get('large_file_url', None)
+    if not img_file_url:
+        img_file_url = reply_message.photo[-1].file_id
+
+    #source_file_url = results['posts']['large_file_url']
     #tags = remap_tags(tags)
     post_tags = []
     for tag in tags:
@@ -181,14 +194,30 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     #if edit_message and (message.forward_from_chat and message.chat.id == message.forward_from_chat.id):
     if edit_message:
         if tags_as_buttons:
-            await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            try:
+                await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            except Exception as e:
+                print(f"Error editing caption: {e}")
         else:
-            await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            try:
+                await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            except Exception as e:
+                print(f"Error editing caption: {e}")
     else:
-        if 'cub' in post_tags or 'human' in post_tags:
-            await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
+        if any(tag in post_tags for tag in TAG_SPOILERED):
+            #await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
+            try:
+                await bot.send_photo(message.chat.id, img_file_url, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
+            except Exception as e:
+                print(f"Error sending photo with spoiler: {e}")
+                await bot.send_photo(message.chat.id, img_file_url, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
         else:
-            await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            #await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            try:
+                await bot.send_photo(message.chat.id, img_file_url, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+            except Exception as e:
+                print(f"Error sending photo: {e}")
+                await bot.send_message(message.chat.id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
         try:
             await message.delete()
         except Exception as e:
@@ -199,6 +228,7 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
 
 @dp.channel_post_handler()
 async def handle_reverse_search_channel_commands(message: types.Message, content_types=["text"]):
+    print(f"{datetime.now().isoformat()} - {message.text}")
     if message.text == '/source' or message.text == '/delsource':
         print('Recieved image to search')
         reply_message = message.reply_to_message
