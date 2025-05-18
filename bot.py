@@ -62,6 +62,49 @@ async def reverse_search(image_file_id):
         # Return an error message
         return ["Error: {}".format(response.status_code)]
 
+async def get_post(post_id):
+    """
+    Downloads a post from e621.net
+
+    Args:
+        post_id: The id of the post to download
+
+    Returns:
+        A dictionary containing the post's information, or a list of error messages
+    """
+
+    # Set the API endpoint and parameters
+    url = f"https://e621.net/posts/{post_id}.json"
+    auth = requests.auth.HTTPBasicAuth(E621_API_USERNAME,E621_API_KEY)
+    headers = {
+        "User-Agent": "TFA Posting Bot"
+    }
+
+    # Send the request
+    response = requests.get(url, auth=auth, headers=headers)
+
+    # Check if the response was successful
+    if response.status_code == 200:
+        # Parse the JSON response
+        data = response.json()
+        post = data["post"]
+        #post["tag_string"] = post["tags"].join(", ")
+        tag_string = ""
+        for type in post["tags"]:
+            for tag in post["tags"][type]:
+                tag_string += tag + " "
+        post["tag_string"] = tag_string
+        post["large_file_url"] = post["file"]["url"]
+        md5 = post["file"]["md5"]
+        # Return the results
+        try:
+            return {"posts": post, "md5": md5}
+        except (KeyError, IndexError):
+            return ["Error: Unable to parse response"]
+    else:
+        # Return an error message
+        return ["Error: {}".format(response.status_code)]
+
 # Define a handler for the /reverse_search command
 @dp.message_handler(content_types=["photo"])
 async def handle_reverse_search(message: types.Message):
@@ -137,12 +180,19 @@ def remap_tags(tags):
             tags.remove(tag)
     return tags
 
-async def send_image_source(message, reply_message=None, edit_message=False, tags_as_buttons=False):
+async def send_image_source(message, reply_message=None, edit_message=False, tags_as_buttons=False, src=None):
     
     if reply_message is None:
         reply_message = message
-    image_file_id = reply_message.photo[-1].file_id
-    results = await reverse_search(image_file_id)
+
+    # Get post info by post id
+    if src is not None:
+        results = await get_post(src)
+    # Get post info by image reverse search
+    else:        
+        image_file_id = reply_message.photo[-1].file_id
+        results = await reverse_search(image_file_id)
+    
     if isinstance(results, dict):
         pass
     else:
@@ -217,7 +267,7 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
                 await bot.send_photo(message.chat.id, img_file_url, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
             except Exception as e:
                 print(f"Error sending photo: {e}")
-                await bot.send_message(message.chat.id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+                await bot.send_message(message.chat.id, text=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
         try:
             await message.delete()
         except Exception as e:
@@ -229,28 +279,42 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
 @dp.channel_post_handler()
 async def handle_reverse_search_channel_commands(message: types.Message, content_types=["text"]):
     print(f"{datetime.now().isoformat()} - {message.text}")
-    if message.text == '/source' or message.text == '/delsource':
-        print('Recieved image to search')
-        reply_message = message.reply_to_message
-        if reply_message and reply_message.photo:
-            if reply_message.media_group_id is None:
-                result = await send_image_source(message, reply_message)
-            else:
-                result = await send_image_source(message, reply_message,True)
-            # try:
-            #     await message.delete()                
-            # except Exception as e:
-            #     pass
-            
-            if message.text.startswith('/delsource') and result is not None:
+    # Split text to get the command
+    command_parts = message.text.split()
+    if len(command_parts) > 0:
+        command = command_parts[0]
+        args = []
+        if len(command_parts) > 1:
+            args = command_parts[1:]
+
+        if command in ['/source', '/delsource']:
+            print('Recieved image to search')
+            reply_message = message.reply_to_message
+            if reply_message and reply_message.photo:
+                if reply_message.media_group_id is None:
+                    if args:
+                        result = await send_image_source(message=message, reply_message=reply_message, src=args[0])
+                    else:
+                        result = await send_image_source(message=message, reply_message=reply_message)
+                else:
+                    if args:
+                        result = await send_image_source(message=message, reply_message=reply_message, edit_message=True, src=args[0])    
+                    else:
+                        result = await send_image_source(message=message, reply_message=reply_message, edit_message=True)
+                # try:
+                #     await message.delete()                
+                # except Exception as e:
+                #     pass
+                
+                if command == '/delsource' and result is not None:
+                    try:
+                        await reply_message.delete()
+                    except Exception as e:
+                        pass
                 try:
-                    await reply_message.delete()
+                    await message.delete()
                 except Exception as e:
                     pass
-            try:
-                await message.delete()
-            except Exception as e:
-                pass
-        else:
-            await message.reply("Please reply to a photo message with this command.") 
-            
+            else:
+                await message.reply("Please reply to a photo message with this command.") 
+                
