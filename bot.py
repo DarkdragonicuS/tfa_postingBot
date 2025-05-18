@@ -13,27 +13,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from aiogram import Dispatcher, Bot, types
+from aiogram import Dispatcher, Bot, types, F
+from aiogram.filters import Command
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from config import TELEGRAM_BOT_TOKEN, E621_API_KEY, E621_API_USERNAME
 from random import shuffle
 import requests
 from global_vars.vars import TAG_SPECIES, TAG_GENERAL, TAG_CHARACTERS, TAG_GENERAL_MAPPING, TAGS_ORDER, TAG_IMPLICATIONS, TAG_SYNONYMS, TAG_SPOILERED
 import hashlib
-from requests_toolbelt.multipart import MultipartEncoder
 from io import BytesIO
 from datetime import datetime
 
-bot = Bot(token=TELEGRAM_BOT_TOKEN)
-dp = Dispatcher(bot)
+bot = Bot(token=TELEGRAM_BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+dp = Dispatcher()
 
-@dp.message_handler(commands="hi")
-async def start(message: types.Message):
-    await message.answer(f"{message.from_user.mention}, и тебе привет!")
+@dp.message(F.text, Command("hi"))
+async def command_hi(message: types.Message):
+    await message.reply(f"{message.from_user.mention_html('@' + message.from_user.first_name)}, и тебе привет!")
 
 async def reverse_search(image_file_id):
     # Download the image file from Telegram
-    image_file = await bot.download_file_by_id(image_file_id)
-    image_bytes = BytesIO(image_file.read())
+    image_file = await bot.get_file(image_file_id)
+    image_bytes = BytesIO()
+    await bot.download(image_file,image_bytes)
       
     # Set the API endpoint and parameters
     url = "https://e621.net/iqdb_queries.json"
@@ -53,7 +56,7 @@ async def reverse_search(image_file_id):
         # Parse the JSON response
         data = response.json()
         # Return the results
-        image_md5 = hashlib.md5(image_file.read()).hexdigest()
+        image_md5 = hashlib.md5(image_bytes.read()).hexdigest()
         try:
             return {"md5": image_md5, "posts": data[0]["post"]["posts"]}
         except (KeyError, IndexError):
@@ -106,7 +109,7 @@ async def get_post(post_id):
         return ["Error: {}".format(response.status_code)]
 
 # Define a handler for the /reverse_search command
-@dp.message_handler(content_types=["photo"])
+@dp.message(F.photo)
 async def handle_reverse_search(message: types.Message):
     print('Recieved image to search')
     # Check if the user sent an image file
@@ -122,9 +125,9 @@ async def handle_reverse_search(message: types.Message):
         # Send an error message
         await message.reply("Please send an image file to perform a reverse search.")
 
-@dp.channel_post_handler(content_types=["photo"])
+@dp.channel_post(F.photo)
 async def handle_reverse_search_channel(message: types.Message):
-    print('URL: ' + message.url)
+    print('URL: ' + message.get_url())
     if message.caption is None and message.media_group_id is None:
         print('Recieved image to search')
         # Check if the user sent an image file
@@ -138,7 +141,7 @@ async def handle_reverse_search_channel(message: types.Message):
     else:
         print('Ignored image to search because it has a caption')
 
-@dp.message_handler(commands=['source','delsource'], content_types=["text"])
+@dp.message(F.text, Command(commands=['source','delsource']))
 async def handle_source_command(message: types.Message):
     print('Recieved image to search')
     reply_message = message.reply_to_message
@@ -224,24 +227,25 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     post_url = 'https://e621.net/posts/' + str(results['posts']['id'])
     md5 = results['md5']
     message_reply = f'MD5: {md5}\nTags: {" ".join(post_tags)}\n{post_url}'
-    keyboard = types.InlineKeyboardMarkup()
     caption=" ".join([f"#{tag}" for tag in post_tags])
 
+    inline_kb_list = []
     if tags_as_buttons:
         row = []
         for tag in post_tags:
             button = types.InlineKeyboardButton(text=tag, callback_data=tag)
             row.append(button)
             if len(row) == 3:
-                keyboard.row(*row)
+                inline_kb_list.append(row)
                 row = []
         if row:
-            keyboard.row(*row)
+            inline_kb_list.append(row)
     else:
         message_reply = f'MD5: {md5}\nTags: {caption}\n{post_url}'
 
     button = types.InlineKeyboardButton(text='e621', url=post_url)
-    keyboard.add(button)
+    inline_kb_list.append([button])
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=inline_kb_list)
     
     #if edit_message and (message.forward_from_chat and message.chat.id == message.forward_from_chat.id):
     if edit_message:
@@ -278,7 +282,8 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     return message_reply
 
 
-@dp.channel_post_handler()
+#@dp.channel_post(F.text, Command(commands=['/source', '/delsource']))
+@dp.channel_post()
 async def handle_reverse_search_channel_commands(message: types.Message, content_types=["text"]):
     print(f"{datetime.now().isoformat()} - {message.text}")
     # Split text to get the command
@@ -318,5 +323,4 @@ async def handle_reverse_search_channel_commands(message: types.Message, content
                 except Exception as e:
                     pass
             else:
-                await message.reply("Please reply to a photo message with this command.") 
-                
+                await message.reply("Please reply to a photo message with this command.")
