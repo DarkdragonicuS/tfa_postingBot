@@ -225,6 +225,8 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     md5 = results['md5']
     message_reply = f'MD5: {md5}\nTags: {" ".join(post_tags)}\n{post_url}'
     keyboard = types.InlineKeyboardMarkup()
+    caption=" ".join([f"#{tag}" for tag in post_tags])
+
     if tags_as_buttons:
         row = []
         for tag in post_tags:
@@ -236,7 +238,7 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
         if row:
             keyboard.row(*row)
     else:
-        message_reply = f'MD5: {md5}\nTags: {" ".join([f"#{tag}" for tag in post_tags])}\n{post_url}'
+        message_reply = f'MD5: {md5}\nTags: {caption}\n{post_url}'
 
     button = types.InlineKeyboardButton(text='e621', url=post_url)
     keyboard.add(button)
@@ -245,29 +247,29 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     if edit_message:
         if tags_as_buttons:
             try:
-                await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+                await reply_message.edit_caption(caption=caption, reply_markup=keyboard)
             except Exception as e:
                 print(f"Error editing caption: {e}")
         else:
             try:
-                await reply_message.edit_caption(" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+                await reply_message.edit_caption(caption=caption, reply_markup=keyboard)
             except Exception as e:
                 print(f"Error editing caption: {e}")
     else:
         if any(tag in post_tags for tag in TAG_SPOILERED):
             #await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
             try:
-                await bot.send_photo(message.chat.id, img_file_url, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
+                await bot.send_photo(message.chat.id, img_file_url, caption=caption, reply_markup=keyboard, has_spoiler=True)
             except Exception as e:
                 print(f"Error sending photo with spoiler: {e}")
-                await bot.send_photo(message.chat.id, img_file_url, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+                await bot.send_photo(message.chat.id, img_file_url, caption=caption, reply_markup=keyboard)
         else:
             #await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
             try:
-                await bot.send_photo(message.chat.id, img_file_url, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+                await bot.send_photo(message.chat.id, img_file_url, caption=caption, reply_markup=keyboard)
             except Exception as e:
                 print(f"Error sending photo: {e}")
-                await bot.send_message(message.chat.id, text=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
+                await bot.send_message(message.chat.id, text=caption, reply_markup=keyboard)
         try:
             await message.delete()
         except Exception as e:
