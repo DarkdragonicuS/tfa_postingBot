@@ -227,7 +227,23 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     post_url = 'https://e621.net/posts/' + str(results['posts']['id'])
     md5 = results['md5']
     message_reply = f'MD5: {md5}\nTags: {" ".join(post_tags)}\n{post_url}'
-    caption=" ".join([f"#{tag}" for tag in post_tags])
+
+    caption = ""
+    caption_entities = []
+    for tag in post_tags:
+        hashtag_entity = types.MessageEntity(
+            type="hashtag",
+            offset=len(caption),
+            length=len(tag) + 1 # plus one for the hash symbol
+        )
+        caption_entities.append(hashtag_entity)
+        caption += f"#{tag} "
+    blockquote_entity = types.MessageEntity(
+        type="blockquote",
+        offset=0,
+        length=len(caption),
+    )
+    caption_entities.append(blockquote_entity)
 
     inline_kb_list = []
     if tags_as_buttons:
@@ -251,26 +267,25 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
     if edit_message:
         if tags_as_buttons:
             try:
-                await reply_message.edit_caption(caption=caption, reply_markup=keyboard)
+                await reply_message.edit_caption(caption=caption, caption_entities=caption_entities, reply_markup=keyboard, parse_mode=None)
             except Exception as e:
                 print(f"Error editing caption: {e}")
         else:
             try:
-                await reply_message.edit_caption(caption=caption, reply_markup=keyboard)
+                await reply_message.edit_caption(caption=caption, caption_entities=caption_entities, reply_markup=keyboard, parse_mode=None)
             except Exception as e:
                 print(f"Error editing caption: {e}")
     else:
         if any(tag in post_tags for tag in TAG_SPOILERED):
-            #await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard, has_spoiler=True)
             try:
-                await bot.send_photo(message.chat.id, img_file_url, caption=caption, reply_markup=keyboard, has_spoiler=True)
+                await bot.send_photo(message.chat.id, img_file_url, caption=caption, caption_entities=caption_entities, reply_markup=keyboard, has_spoiler=True, parse_mode=None)
             except Exception as e:
                 print(f"Error sending photo with spoiler: {e}")
-                await bot.send_photo(message.chat.id, img_file_url, caption=caption, reply_markup=keyboard)
+                await bot.send_photo(message.chat.id, img_file_url, caption=caption, caption_entities=caption_entities, reply_markup=keyboard, parse_mode=None)
         else:
             #await bot.send_photo(message.chat.id, reply_message.photo[-1].file_id, caption=" ".join([f"#{tag}" for tag in post_tags]), reply_markup=keyboard)
             try:
-                await bot.send_photo(message.chat.id, img_file_url, caption=caption, reply_markup=keyboard)
+                await bot.send_photo(message.chat.id, img_file_url, caption=caption, caption_entities=caption_entities, reply_markup=keyboard, parse_mode=None)
             except Exception as e:
                 print(f"Error sending photo: {e}")
                 await bot.send_message(message.chat.id, text=caption, reply_markup=keyboard)
@@ -281,8 +296,6 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
 
     return message_reply
 
-
-#@dp.channel_post(F.text, Command(commands=['/source', '/delsource']))
 @dp.channel_post()
 async def handle_reverse_search_channel_commands(message: types.Message, content_types=["text"]):
     print(f"{datetime.now().isoformat()} - {message.text}")
