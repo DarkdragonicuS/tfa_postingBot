@@ -239,7 +239,7 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
         caption_entities.append(hashtag_entity)
         caption += f"#{tag} "
     blockquote_entity = types.MessageEntity(
-        type="blockquote",
+        type="expandable_blockquote",
         offset=0,
         length=len(caption),
     )
