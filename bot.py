@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from aiogram import Dispatcher, Bot, types, F
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from config import TELEGRAM_BOT_TOKEN, E621_API_KEY, E621_API_USERNAME
@@ -151,8 +151,8 @@ async def handle_reverse_search_channel(message: types.Message):
     print('URL: ' + message.get_url())
     print('It''s a video. Skipping...')
 
-@dp.message(F.text, Command(commands=['source','delsource']))
-async def handle_source_command(message: types.Message):
+@dp.message(F.text, Command(commands=['source','delsource'], prefix='/'))
+async def handle_source_command(message: types.Message, command: CommandObject):
     print('Recieved image to search')
     reply_message = message.reply_to_message
     if reply_message and reply_message.photo:
@@ -162,7 +162,7 @@ async def handle_source_command(message: types.Message):
         except Exception as e:
             pass
         
-        if message.text.startswith('/delsource'):
+        if command.command == 'delsource':
             try:
                 await reply_message.delete()
             except Exception as e:
@@ -306,44 +306,37 @@ async def send_image_source(message, reply_message=None, edit_message=False, tag
 
     return message_reply
 
-@dp.channel_post()
-async def handle_reverse_search_channel_commands(message: types.Message, content_types=["text"]):
+@dp.channel_post(Command(commands=['source', 'delsource'], prefix='/'))
+async def handle_reverse_search_channel_commands(message: types.Message, command: CommandObject):
     print(f"{datetime.now().isoformat()} - {message.text}")
-    # Split text to get the command
-    command_parts = message.text.split()
-    if len(command_parts) > 0:
-        command = command_parts[0]
-        args = []
-        if len(command_parts) > 1:
-            args = command_parts[1:]
-
-        if command in ['/source', '/delsource']:
-            print('Recieved image to search')
-            reply_message = message.reply_to_message
-            if reply_message and reply_message.photo:
-                if reply_message.media_group_id is None:
-                    if args:
-                        result = await send_image_source(message=message, reply_message=reply_message, src=args[0])
-                    else:
-                        result = await send_image_source(message=message, reply_message=reply_message)
+    if command.command in ['source', 'delsource']:
+        args = command.args
+        print('Recieved image to search')
+        reply_message = message.reply_to_message
+        if reply_message and reply_message.photo:
+            if reply_message.media_group_id is None:
+                if args:
+                    result = await send_image_source(message=message, reply_message=reply_message, src=args)
                 else:
-                    if args:
-                        result = await send_image_source(message=message, reply_message=reply_message, edit_message=True, src=args[0])    
-                    else:
-                        result = await send_image_source(message=message, reply_message=reply_message, edit_message=True)
-                # try:
-                #     await message.delete()                
-                # except Exception as e:
-                #     pass
-                
-                if command == '/delsource' and result is not None:
-                    try:
-                        await reply_message.delete()
-                    except Exception as e:
-                        pass
+                    result = await send_image_source(message=message, reply_message=reply_message)
+            else:
+                if args:
+                    result = await send_image_source(message=message, reply_message=reply_message, edit_message=True, src=args)    
+                else:
+                    result = await send_image_source(message=message, reply_message=reply_message, edit_message=True)
+            # try:
+            #     await message.delete()                
+            # except Exception as e:
+            #     pass
+            
+            if command.command == 'delsource' and result is not None:
                 try:
-                    await message.delete()
+                    await reply_message.delete()
                 except Exception as e:
                     pass
-            else:
-                await message.reply("Please reply to a photo message with this command.")
+            try:
+                await message.delete()
+            except Exception as e:
+                pass
+        else:
+            await message.reply("Please reply to a photo message with this command.")
