@@ -141,6 +141,16 @@ async def handle_reverse_search_channel(message: types.Message):
     else:
         print('Ignored image to search because it has a caption')
 
+@dp.channel_post(F.animation)
+async def handle_reverse_search_channel(message: types.Message):
+    print('URL: ' + message.get_url())
+    print('It''s an animation. Skipping...')
+
+@dp.channel_post(F.video)
+async def handle_reverse_search_channel(message: types.Message):
+    print('URL: ' + message.get_url())
+    print('It''s a video. Skipping...')
+
 @dp.message(F.text, Command(commands=['source','delsource']))
 async def handle_source_command(message: types.Message):
     print('Recieved image to search')
